@@ -1,1 +1,1 @@
-# light-meter
+# OpenCineLightMeter
