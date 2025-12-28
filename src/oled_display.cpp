@@ -1,6 +1,7 @@
 #include "oled_display.h"
 #include "Arduino.h"
 #include "types.h"
+#include "Lato_Bold_8.h"
 
 OledDisplay::OledDisplay(SSD1306 *display) {
     _display = display;
