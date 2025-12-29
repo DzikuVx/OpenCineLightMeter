@@ -9,9 +9,13 @@
 
 #define LIGHT_SENSOR_TASK_MS 250
 
-#define PIN_BUTTON_MODE 14
-#define PIN_BUTTON_LEFT 12
-#define PIN_BUTTON_RIGHT 13
+#define PIN_BUTTON_MODE 26
+
+#define PIN_BUTTON_UP 13
+#define PIN_BUTTON_DOWN 12
+#define PIN_BUTTON_LEFT 14
+#define PIN_BUTTON_RIGHT 27
+
 #define PIN_BUTTON_HOLD 0
 
 #define PIN_OLED_SDA 4
@@ -25,8 +29,12 @@
 #define EEPROM_IDENT 0x69
 
 QmuTactile buttonMode(PIN_BUTTON_MODE);
+
+QmuTactile buttonUp(PIN_BUTTON_UP);
+QmuTactile buttonDown(PIN_BUTTON_DOWN);
 QmuTactile buttonLeft(PIN_BUTTON_LEFT);
 QmuTactile buttonRight(PIN_BUTTON_RIGHT);
+
 QmuTactile buttonHold(PIN_BUTTON_HOLD);
 
 SSD1306 display(OLED_ADDRESS, PIN_OLED_SDA, PIN_OLED_SCL);
@@ -38,6 +46,12 @@ String ISO_TABLE[] = {"25", "50", "100", "200", "400", "800", "1600", "3200", "6
 String APERTURE_TABLE[] = {"1.0", "1.4", "2", "2.8", "4", "5.6", "8", "11", "16", "22", "32"};
 String SHUTTER_TABLE[] = {"60s", "30s", "15s", "8s", "4s", "2s", "1s", "1/2s", "1/4s", "1/8s", "1/15s", "1/30s", "1/60s", "1/125s", "1/250s", "1/500s", "1/1000s", "1/2000s", "1/4000s", "1/8000s", "1/16k", "1/32k"};
 String TYPE_TABLE[] = {"Incident", "Reflected"};
+
+static const adjustSetting_e ADJUST_SETTING_MATRIX[3][3] = {
+  {ADJUST_SETTING_ISO,     ADJUST_SETTING_SHUTTER,  ADJUST_SETTING_ND_FILTER},
+  {ADJUST_SETTING_SHUTTER, ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
+  {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER}
+};
 
 settings_t settings;
 
@@ -76,8 +90,15 @@ void lightSensorTaskHandler(void *pvParameters)
       // Store computed aperture
       outputValue = sqrt(shutter * pow(2, ev));
     } else if (settings.mode == LIGHT_METER_MODE_SHUTTER){
-      // TODO
-      //  ev = reflectedEv;
+      // Compute shutter time (seconds) from EV and selected aperture
+      // Equation derivation from aperture mode: f^2 = shutter * 2^ev
+      // => shutter = f^2 / 2^ev. With full-stop aperture indexing,
+      // f^2 equals 2^(apertureIndex).
+      const float apertureSquared = powf(2.0f, settings.apertureIndex);
+      const float shutter = apertureSquared / powf(2.0f, ev);
+
+      // Store computed shutter (seconds)
+      outputValue = shutter;
     } else {
       // TODO This is ISO case
       //  ev = incidentEv;
@@ -119,9 +140,13 @@ void setup() {
       ;
   }
 
+  //Init all buttons
   buttonMode.start();
+  buttonUp.start();
+  buttonDown.start();
   buttonLeft.start();
   buttonRight.start();
+
   buttonHold.start();
 
   xTaskCreatePinnedToCore(
@@ -150,12 +175,18 @@ float incidentEv;
 
 float outputValue = 0;
 
+uint8_t propertyChangeIndex = 0;
+
 void loop()
 {
 
   buttonMode.loop();
+
+  buttonUp.loop();
+  buttonDown.loop();
   buttonLeft.loop();
   buttonRight.loop();
+  
   buttonHold.loop();
 
   // if (buttonMode.getState() == TACTILE_STATE_LONG_PRESS) {
@@ -174,71 +205,61 @@ void loop()
   // }
 
   // Button logic
-  if (settings.mode == LIGHT_METER_MODE_APERTURE)
-  {
 
-    if (buttonMode.getState() == TACTILE_STATE_SHORT_PRESS)
-    {
-
-      if (settings.adjustSetting == ADJUST_SETTING_ISO)
-      {
-        settings.adjustSetting = ADJUST_SETTING_SHUTTER;
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER)
-      {
-        settings.adjustSetting = ADJUST_SETTING_ND_FILTER;
-      }
-      else
-      {
-        settings.adjustSetting = ADJUST_SETTING_ISO;
-      }
-
-      oledDisplay.forceDisplay();
+  //Up and down buttons select a property to change based on current mode
+  if (buttonUp.getState() == TACTILE_STATE_SHORT_PRESS) {
+    propertyChangeIndex--;
+    if (propertyChangeIndex < 0) {
+      propertyChangeIndex = 2;
     }
+    
+    settings.adjustSetting = ADJUST_SETTING_MATRIX[settings.mode][propertyChangeIndex];
+    
+    oledDisplay.forceDisplay();
+  }
+  if (buttonDown.getState() == TACTILE_STATE_SHORT_PRESS) {
+    propertyChangeIndex++;
+    if (propertyChangeIndex > 2) {
+      propertyChangeIndex = 0;
+    }
+    
+    settings.adjustSetting = ADJUST_SETTING_MATRIX[settings.mode][propertyChangeIndex];
 
-    if (buttonLeft.getState() == TACTILE_STATE_SHORT_PRESS)
-    {
-      if (settings.adjustSetting == ADJUST_SETTING_ISO)
-      {
+    oledDisplay.forceDisplay();
+  }
+
+  if (settings.mode == LIGHT_METER_MODE_APERTURE) {
+
+    if (buttonLeft.getState() == TACTILE_STATE_SHORT_PRESS) {
+      if (settings.adjustSetting == ADJUST_SETTING_ISO) {
         settings.isoIndex--;
 
-        if (settings.isoIndex < ISO_INDEX_MIN)
-        {
+        if (settings.isoIndex < ISO_INDEX_MIN) {
           settings.isoIndex = ISO_INDEX_MIN;
         }
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER)
-      {
+      } else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER) {
 
         settings.shutterIndex--;
 
-        if (settings.shutterIndex < SHUTTER_INDEX_MIN)
-        {
+        if (settings.shutterIndex < SHUTTER_INDEX_MIN) {
           settings.shutterIndex = SHUTTER_INDEX_MIN;
         }
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_TYPE)
-      {
+      } else if (settings.adjustSetting == ADJUST_SETTING_TYPE) {
 
-        if (settings.type == LIGHT_METER_TYPE_INCIDENT)
-        {
+        if (settings.type == LIGHT_METER_TYPE_INCIDENT) {
           settings.type = LIGHT_METER_TYPE_REFLECTED;
-        }
-        else
-        {
+        } else {
           settings.type = LIGHT_METER_TYPE_INCIDENT;
         }
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_ND_FILTER)
-      {
+      } else if (settings.adjustSetting == ADJUST_SETTING_ND_FILTER) {
 
         settings.ndFilterIndex--;
 
-        if (settings.ndFilterIndex < ND_FILTER_INDEX_MIN)
-        {
+        if (settings.ndFilterIndex < ND_FILTER_INDEX_MIN) {
           settings.ndFilterIndex = ND_FILTER_INDEX_MIN;
         }
       }
+      
       oledDisplay.forceDisplay();
       EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
       EEPROM.commit();
