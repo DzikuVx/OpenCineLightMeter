@@ -47,10 +47,18 @@ String APERTURE_TABLE[] = {"1.0", "1.4", "2", "2.8", "4", "5.6", "8", "11", "16"
 String SHUTTER_TABLE[] = {"60s", "30s", "15s", "8s", "4s", "2s", "1s", "1/2s", "1/4s", "1/8s", "1/15s", "1/30s", "1/60s", "1/125s", "1/250s", "1/500s", "1/1000s", "1/2000s", "1/4000s", "1/8000s", "1/16k", "1/32k"};
 String TYPE_TABLE[] = {"Incident", "Reflected"};
 
+/*
+  It's in order of:
+  LIGHT_METER_MODE_APERTURE
+  LIGHT_METER_MODE_SHUTTER
+  LIGHT_METER_MODE_ISO
+
+  Used to determine which setting to change when left/ right buttons pressed
+*/
 static const adjustSetting_e ADJUST_SETTING_MATRIX[3][3] = {
   {ADJUST_SETTING_ISO,     ADJUST_SETTING_SHUTTER,  ADJUST_SETTING_ND_FILTER},
-  {ADJUST_SETTING_SHUTTER, ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
-  {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER}
+  {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
+  {ADJUST_SETTING_SHUTTER, ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER}
 };
 
 settings_t settings;
