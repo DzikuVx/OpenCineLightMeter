@@ -183,7 +183,8 @@ float incidentEv;
 
 float outputValue = 0;
 
-uint8_t propertyChangeIndex = 0;
+//Index variable used to determine which property is editable at the moment
+int8_t propertyChangeIndex = 0;
 
 void loop()
 {
