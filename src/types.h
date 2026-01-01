@@ -54,4 +54,7 @@ typedef struct settings_s
 #define ND_FILTER_INDEX_MIN 0
 #define ND_FILTER_INDEX_MAX 10
 
+#define APERTURE_INDEX_MIN 0
+#define APERTURE_INDEX_MAX 10
+
 #endif

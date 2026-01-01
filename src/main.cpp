@@ -52,13 +52,15 @@ String TYPE_TABLE[] = {"Incident", "Reflected"};
   LIGHT_METER_MODE_APERTURE
   LIGHT_METER_MODE_SHUTTER
   LIGHT_METER_MODE_ISO
+  LIGHT_METER_MODE_ND
 
   Used to determine which setting to change when left/ right buttons pressed
 */
-static const adjustSetting_e ADJUST_SETTING_MATRIX[3][3] = {
+static const adjustSetting_e ADJUST_SETTING_MATRIX[4][3] = {
   {ADJUST_SETTING_ISO,     ADJUST_SETTING_SHUTTER,  ADJUST_SETTING_ND_FILTER},
   {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
-  {ADJUST_SETTING_SHUTTER, ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER}
+  {ADJUST_SETTING_SHUTTER, ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
+  {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE,  ADJUST_SETTING_SHUTTER}
 };
 
 settings_t settings;
@@ -237,90 +239,96 @@ void loop()
     oledDisplay.forceDisplay();
   }
 
-  if (settings.mode == LIGHT_METER_MODE_APERTURE) {
+  //Left and right buttons change the selected property
+  if (buttonLeft.getState() == TACTILE_STATE_SHORT_PRESS) {
+    if (settings.adjustSetting == ADJUST_SETTING_APERTURE) {
 
-    if (buttonLeft.getState() == TACTILE_STATE_SHORT_PRESS) {
-      if (settings.adjustSetting == ADJUST_SETTING_ISO) {
-        settings.isoIndex--;
+      settings.apertureIndex--;
 
-        if (settings.isoIndex < ISO_INDEX_MIN) {
-          settings.isoIndex = ISO_INDEX_MIN;
-        }
-      } else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER) {
-
-        settings.shutterIndex--;
-
-        if (settings.shutterIndex < SHUTTER_INDEX_MIN) {
-          settings.shutterIndex = SHUTTER_INDEX_MIN;
-        }
-      } else if (settings.adjustSetting == ADJUST_SETTING_TYPE) {
-
-        if (settings.type == LIGHT_METER_TYPE_INCIDENT) {
-          settings.type = LIGHT_METER_TYPE_REFLECTED;
-        } else {
-          settings.type = LIGHT_METER_TYPE_INCIDENT;
-        }
-      } else if (settings.adjustSetting == ADJUST_SETTING_ND_FILTER) {
-
-        settings.ndFilterIndex--;
-
-        if (settings.ndFilterIndex < ND_FILTER_INDEX_MIN) {
-          settings.ndFilterIndex = ND_FILTER_INDEX_MIN;
-        }
+      if (settings.apertureIndex < 0) {
+        settings.apertureIndex = APERTURE_INDEX_MIN;
       }
-      
-      oledDisplay.forceDisplay();
-      EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
-      EEPROM.commit();
+    } else if (settings.adjustSetting == ADJUST_SETTING_ISO) {
+      settings.isoIndex--;
+
+      if (settings.isoIndex < ISO_INDEX_MIN) {
+        settings.isoIndex = ISO_INDEX_MIN;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER) {
+
+      settings.shutterIndex--;
+
+      if (settings.shutterIndex < SHUTTER_INDEX_MIN) {
+        settings.shutterIndex = SHUTTER_INDEX_MIN;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_TYPE) {
+
+      if (settings.type == LIGHT_METER_TYPE_INCIDENT) {
+        settings.type = LIGHT_METER_TYPE_REFLECTED;
+      } else {
+        settings.type = LIGHT_METER_TYPE_INCIDENT;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_ND_FILTER) {
+
+      settings.ndFilterIndex--;
+
+      if (settings.ndFilterIndex < ND_FILTER_INDEX_MIN) {
+        settings.ndFilterIndex = ND_FILTER_INDEX_MIN;
+      }
+    }
+    
+    oledDisplay.forceDisplay();
+    EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
+    EEPROM.commit();
+  }
+
+  if (buttonRight.getState() == TACTILE_STATE_SHORT_PRESS)
+  {
+    if (settings.adjustSetting == ADJUST_SETTING_APERTURE) {
+
+      settings.apertureIndex++;
+
+      if (settings.apertureIndex > APERTURE_INDEX_MAX)
+      {
+        settings.apertureIndex = APERTURE_INDEX_MAX;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_ISO) {
+      settings.isoIndex++;
+
+      if (settings.isoIndex > ISO_INDEX_MAX)
+      {
+        settings.isoIndex = ISO_INDEX_MAX;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER) {
+      settings.shutterIndex++;
+
+      if (settings.shutterIndex > SHUTTER_INDEX_MAX)
+      {
+        settings.shutterIndex = SHUTTER_INDEX_MAX;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_TYPE) {
+
+      if (settings.type == LIGHT_METER_TYPE_INCIDENT)
+      {
+        settings.type = LIGHT_METER_TYPE_REFLECTED;
+      }
+      else
+      {
+        settings.type = LIGHT_METER_TYPE_INCIDENT;
+      }
+    } else if (settings.adjustSetting == ADJUST_SETTING_ND_FILTER) {
+
+      settings.ndFilterIndex++;
+
+      if (settings.ndFilterIndex > ND_FILTER_INDEX_MAX)
+      {
+        settings.ndFilterIndex = ND_FILTER_INDEX_MAX;
+      }
     }
 
-    if (buttonRight.getState() == TACTILE_STATE_SHORT_PRESS)
-    {
-      if (settings.adjustSetting == ADJUST_SETTING_ISO)
-      {
-        settings.isoIndex++;
-
-        if (settings.isoIndex > ISO_INDEX_MAX)
-        {
-          settings.isoIndex = ISO_INDEX_MAX;
-        }
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_SHUTTER)
-      {
-        settings.shutterIndex++;
-
-        if (settings.shutterIndex > SHUTTER_INDEX_MAX)
-        {
-          settings.shutterIndex = SHUTTER_INDEX_MAX;
-        }
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_TYPE)
-      {
-
-        if (settings.type == LIGHT_METER_TYPE_INCIDENT)
-        {
-          settings.type = LIGHT_METER_TYPE_REFLECTED;
-        }
-        else
-        {
-          settings.type = LIGHT_METER_TYPE_INCIDENT;
-        }
-      }
-      else if (settings.adjustSetting == ADJUST_SETTING_ND_FILTER)
-      {
-
-        settings.ndFilterIndex++;
-
-        if (settings.ndFilterIndex > ND_FILTER_INDEX_MAX)
-        {
-          settings.ndFilterIndex = ND_FILTER_INDEX_MAX;
-        }
-      }
-
-      oledDisplay.forceDisplay();
-      EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
-      EEPROM.commit();
-    }
+    oledDisplay.forceDisplay();
+    EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
+    EEPROM.commit();
   }
 
   // static uint32_t nextSerialUpdate = 0;
