@@ -13,10 +13,19 @@ enum lightMeterMode_e {
 
 enum lightMeterCompute_e {
     LIGHT_METER_MODE_APERTURE = 0,
-    LIGHT_METER_MODE_ISO,
     LIGHT_METER_MODE_SHUTTER,
+    LIGHT_METER_MODE_ISO,
     LIGHT_METER_MODE_ND,
     LIGHT_METER_MODE_COUNT
+};
+
+enum oledPages_e {
+    OLED_PAGE_NONE,
+    OLED_PAGE_APERTURE,
+    OLED_PAGE_SHUTTER,
+    OLED_PAGE_ISO,
+    OLED_PAGE_ND,
+    OLED_PAGE_ERROR
 };
 
 enum adjustSetting_e {
@@ -56,5 +65,6 @@ typedef struct settings_s
 
 #define APERTURE_INDEX_MIN 0
 #define APERTURE_INDEX_MAX 10
+#define APERTURE_TABLE_OFFSET 0
 
 #endif

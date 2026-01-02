@@ -4,12 +4,6 @@
 #include "SSD1306.h"
 #include "types.h"
 
-enum txOledPages {
-    OLED_PAGE_NONE,
-    OLED_PAGE_EV,
-    OLED_PAGE_ERROR
-};
-
 #define OLED_COL_COUNT 64
 #define OLED_DISPLAY_PAGE_COUNT 1
 
@@ -37,7 +31,9 @@ class OledDisplay {
         void setOnlyForcedDisplay(bool onlyForcedDisplay);
     private:
         SSD1306 *_display;
-        void renderPageEV();
+        void renderPageAperture();
+        void renderPageShutter();
+        void renderWidgetEv();
         void page();
         uint8_t _page = OLED_PAGE_NONE;
         bool _forceDisplay = false;

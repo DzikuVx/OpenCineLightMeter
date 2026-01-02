@@ -44,7 +44,7 @@ TwoWire I2C1 = TwoWire(0);
 
 String ISO_TABLE[] = {"25", "50", "100", "200", "400", "800", "1600", "3200", "6400", "128K", "256K"};
 String APERTURE_TABLE[] = {"1.0", "1.4", "2", "2.8", "4", "5.6", "8", "11", "16", "22", "32"};
-String SHUTTER_TABLE[] = {"60s", "30s", "15s", "8s", "4s", "2s", "1s", "1/2s", "1/4s", "1/8s", "1/15s", "1/30s", "1/60s", "1/125s", "1/250s", "1/500s", "1/1000s", "1/2000s", "1/4000s", "1/8000s", "1/16k", "1/32k"};
+String SHUTTER_TABLE[] = {"60", "30", "15", "8", "4", "2", "1", "1/2", "1/4", "1/8", "1/15", "1/30", "1/60", "1/125", "1/250", "1/500", "1/1000", "1/2000", "1/4000", "1/8000", "1/16k", "1/32k"};
 String TYPE_TABLE[] = {"Incident", "Reflected"};
 
 /*
@@ -61,6 +61,13 @@ static const adjustSetting_e ADJUST_SETTING_MATRIX[4][3] = {
   {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
   {ADJUST_SETTING_SHUTTER, ADJUST_SETTING_APERTURE, ADJUST_SETTING_ND_FILTER},
   {ADJUST_SETTING_ISO,     ADJUST_SETTING_APERTURE,  ADJUST_SETTING_SHUTTER}
+};
+
+static const oledPages_e modeToPageMapping[LIGHT_METER_MODE_COUNT] = {
+  OLED_PAGE_APERTURE,
+  OLED_PAGE_SHUTTER,
+  OLED_PAGE_ISO,
+  OLED_PAGE_ND
 };
 
 settings_t settings;
@@ -129,6 +136,14 @@ void setup() {
     true;
   }
 
+  if (EEPROM.read(EEPROM_IDENT_ADDRESS) == EEPROM_IDENT) {
+    EEPROM_readAnything(EEPROM_SETTINGS_ADDRESS, settings);
+  } else {
+    EEPROM.write(EEPROM_IDENT_ADDRESS, EEPROM_IDENT);
+    EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
+    EEPROM.commit();
+  }
+
   Serial.begin(115200);
 
   // Setup I2C OLED
@@ -139,7 +154,7 @@ void setup() {
   Wire.begin(PIN_OLED_SDA, PIN_OLED_SCL);
 
   oledDisplay.init();
-  oledDisplay.setPage(OLED_PAGE_EV);
+  oledDisplay.setPage(modeToPageMapping[settings.mode]);
   oledDisplay.setOnlyForcedDisplay(true);
 
   if (!veml.begin()) {
@@ -167,14 +182,6 @@ void setup() {
       0,                      /* Priority of the task */
       &lightSensorTask,       /* Task handle. */
       0);
-
-  if (EEPROM.read(EEPROM_IDENT_ADDRESS) == EEPROM_IDENT) {
-    EEPROM_readAnything(EEPROM_SETTINGS_ADDRESS, settings);
-  } else {
-    EEPROM.write(EEPROM_IDENT_ADDRESS, EEPROM_IDENT);
-    EEPROM_writeAnything(EEPROM_SETTINGS_ADDRESS, settings);
-    EEPROM.commit();
-  }
 }
 
 float lux;
@@ -200,20 +207,20 @@ void loop()
   
   buttonHold.loop();
 
-  // if (buttonMode.getState() == TACTILE_STATE_LONG_PRESS) {
+  if (buttonMode.getState() == TACTILE_STATE_LONG_PRESS) {
 
-  //     if (settings.mode == LIGHT_METER_MODE_APERTURE) {
-  //         settings.mode = LIGHT_METER_MODE_SHUTTER;
-  //     } else if (settings.mode == LIGHT_METER_MODE_SHUTTER) {
-  //         settings.mode = LIGHT_METER_MODE_ISO;
-  //     } else if (settings.mode == LIGHT_METER_MODE_ISO) {
-  //         settings.mode = LIGHT_METER_MODE_ND;
-  //     } else {
-  //         settings.mode = LIGHT_METER_MODE_APERTURE;
-  //     }
+      if (settings.mode == LIGHT_METER_MODE_APERTURE) {
+          settings.mode = LIGHT_METER_MODE_SHUTTER;
+      } else {
+          settings.mode = LIGHT_METER_MODE_APERTURE;
+      }
 
-  //     oledDisplay.forceDisplay();
-  // }
+      oledDisplay.setPage(modeToPageMapping[settings.mode]);
+      propertyChangeIndex = 0;
+      settings.adjustSetting = ADJUST_SETTING_MATRIX[settings.mode][propertyChangeIndex];
+
+      oledDisplay.forceDisplay();
+  }
 
   // Button logic
 
