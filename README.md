@@ -15,6 +15,40 @@ What it can do:
 
 And that's mostly all... Bear in mind, current version includes code and math for reflected light as well, but it's not working as expected yet, so this option is disabled from UI
 
+## Required Parts
+
+To build this light meter, you'll need the following components:
+
+### Core Components
+1. **ESP32 Development Board** - Main microcontroller (tested with esp32dev)
+2. **VEML7700 Light Sensor** - Digital ambient light sensor (I2C interface)
+3. **SSD1306 OLED Display** - 128x64 or 128x32 I2C OLED display
+4. **5-Way Navigation Joystick** - For user interface (Mode, Up, Down, Left, Right)
+5. **Tactile Push Button (Optional)** - HOLD button for additional functionality
+6. **Breadboard or PCB** - For assembling the components
+7. **Jumper Wires/Dupont Cables** - For connecting components
+
+### Optional Components
+- **Enclosure** - 3D printed or purchased case to house the meter
+- **Battery/Power Supply** - USB power bank or LiPo battery with charging circuit
+
+### Pin Connections
+| Component | ESP32 GPIO |
+|-----------|------------|
+| OLED SDA | GPIO 4 |
+| OLED SCL | GPIO 15 |
+| OLED RESET | GPIO 16 |
+| VEML7700 SDA | GPIO 4 (shared I2C) |
+| VEML7700 SCL | GPIO 15 (shared I2C) |
+| Joystick Mode | GPIO 26 |
+| Joystick Up | GPIO 13 |
+| Joystick Down | GPIO 12 |
+| Joystick Left | GPIO 14 |
+| Joystick Right | GPIO 27 |
+| Button Hold (Optional) | GPIO 0 |
+
+**Note:** VEML7700 and OLED share the same I2C bus (SDA/SCL pins).
+
 Notes:
 1. Tested only on ESP32, with some changes should work with ESP32-C3 and ESP32-S3
 2. There is a plethora of SSD1306 equipped boards with ESP32, the one I use here, assumes:
